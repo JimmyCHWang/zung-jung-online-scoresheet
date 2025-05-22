@@ -1,13 +1,19 @@
 import { createContext, useContext, ReactNode, useState } from 'react'
 
+export type Player = 'east' | 'south' | 'west' | 'north'
+
 interface ScoreFormContextType {
   isDraw: boolean
   isTimeout: boolean
   score: number
   isDrawOrTimeout: boolean
+  winner: number
+  loser: number
   setScore: (score: number) => void
   setIsDraw: (isDraw: boolean) => void
   setIsTimeout: (isTimeout: boolean) => void
+  setWinner: (winner: number) => void
+  setLoser: (loser: number) => void
   handleScoreChange: (delta: number) => void
 }
 
@@ -25,12 +31,15 @@ export function ScoreFormProvider({
   const [score, setScore] = useState(initialScore)
   const [isDraw, setIsDraw] = useState(false)
   const [isTimeout, setIsTimeout] = useState(false)
+  const [winner, setWinner] = useState(-1)
+  const [loser, setLoser] = useState(-1)
   const isDrawOrTimeout = isDraw || isTimeout
 
   const handleScoreChange = (delta: number) => {
     setScore(prev => {
       const newScore = prev + delta
-      return newScore < 1 ? 1 : newScore
+      const mod5Score = Math.floor(newScore / 5) * 5
+      return mod5Score < 1 ? 1 : mod5Score
     })
   }
 
@@ -40,9 +49,13 @@ export function ScoreFormProvider({
       isTimeout, 
       score, 
       isDrawOrTimeout,
+      winner,
+      loser,
       setScore,
       setIsDraw,
       setIsTimeout,
+      setWinner,
+      setLoser,
       handleScoreChange
     }}>
       {children}

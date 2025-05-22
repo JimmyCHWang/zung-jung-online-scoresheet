@@ -1,13 +1,16 @@
 import { Box, Typography, Radio, RadioGroup, FormControlLabel, Paper } from '@mui/material'
-import { useState } from 'react'
+import { useScoreForm } from '../../context'
+import { scoreCompute } from '@/utils/zung-jung/score'
 
 const PLAYER_NAMES = ['东', '南', '西', '北']
 
 export default function PlayerStatus() {
-  // 和牌人（只能选一个，-1表示未选）
-  const [winner, setWinner] = useState(-1)
-  // 点炮人（只能选一个，-1表示未选）
-  const [loser, setLoser] = useState(-1)
+  const { winner, loser, setWinner, setLoser, isDrawOrTimeout, score } = useScoreForm()
+
+  // 计算分数变动
+  const scoreChanges = winner !== -1 && loser !== -1 && score > 0
+    ? scoreCompute({ score, winner, loser })
+    : [0, 0, 0, 0]
 
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
@@ -21,9 +24,14 @@ export default function PlayerStatus() {
       </Box>
       {/* 得失分 */}
       <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
-        {PLAYER_NAMES.map((_, idx) => (
+        {scoreChanges.map((change, idx) => (
           <Box key={idx} sx={{ flex: 1, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.disabled">+0</Typography>
+            <Typography 
+              variant="body2" 
+              color={change > 0 ? 'error' : change < 0 ? 'success.main' : 'text.disabled'}
+            >
+              {change > 0 ? `+${change}` : change}
+            </Typography>
           </Box>
         ))}
       </Box>
@@ -38,7 +46,7 @@ export default function PlayerStatus() {
           <FormControlLabel
             key={idx}
             value={idx}
-            control={<Radio />}
+            control={<Radio disabled={isDrawOrTimeout} />}
             label={'和牌'}
             sx={{ flex: 1, mx: 0.5 }}
           />
@@ -55,7 +63,7 @@ export default function PlayerStatus() {
           <FormControlLabel
             key={idx}
             value={idx}
-            control={<Radio />}
+            control={<Radio disabled={isDrawOrTimeout} />}
             label={winner === idx ? '自摸' : '点炮'}
             sx={{ flex: 1, mx: 0.5 }}
           />

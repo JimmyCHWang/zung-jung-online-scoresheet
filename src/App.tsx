@@ -1,18 +1,18 @@
 import { useState } from 'react'
 import { 
-  Container, 
   Box, 
   Paper,
   BottomNavigation,
   BottomNavigationAction,
-  Typography,
-  Switch,
-  FormControlLabel,
   useTheme
 } from '@mui/material'
 import ScoreIcon from '@mui/icons-material/Score'
 import CalculateIcon from '@mui/icons-material/Calculate'
 import SettingsIcon from '@mui/icons-material/Settings'
+import { AppTabs, type AppTabType } from './types'
+import Scoresheet from './pages/Scoresheet'
+import Calculator from './pages/Calculator'
+import Settings from './pages/Settings'
 import './App.css'
 
 interface AppProps {
@@ -21,7 +21,7 @@ interface AppProps {
 }
 
 function App({ darkMode, onThemeChange }: AppProps) {
-  const [value, setValue] = useState(0)
+  const [value, setValue] = useState<AppTabType>(AppTabs.SCORESHEET)
   const theme = useTheme()
 
   return (
@@ -38,45 +38,10 @@ function App({ darkMode, onThemeChange }: AppProps) {
         overflow: 'auto',
         pb: 7 // 为底部导航栏留出空间
       }}>
-        {value === 0 && (
-          <Container maxWidth="sm" sx={{ mt: 2 }}>
-            <Typography variant="h5" component="h1" gutterBottom>
-              记分表
-            </Typography>
-            <Paper elevation={3} sx={{ p: 2 }}>
-              {/* 这里将添加记分表的内容 */}
-              <Typography>记分表内容将在这里显示</Typography>
-            </Paper>
-          </Container>
-        )}
-        {value === 1 && (
-          <Container maxWidth="sm" sx={{ mt: 2 }}>
-            <Typography variant="h5" component="h1" gutterBottom>
-              计分器
-            </Typography>
-            <Paper elevation={3} sx={{ p: 2 }}>
-              {/* 这里将添加计分器的内容 */}
-              <Typography>计分器内容将在这里显示</Typography>
-            </Paper>
-          </Container>
-        )}
-        {value === 2 && (
-          <Container maxWidth="sm" sx={{ mt: 2 }}>
-            <Typography variant="h5" component="h1" gutterBottom>
-              设置
-            </Typography>
-            <Paper elevation={3} sx={{ p: 2 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={darkMode}
-                    onChange={(e) => onThemeChange(e.target.checked)}
-                  />
-                }
-                label="深色模式"
-              />
-            </Paper>
-          </Container>
+        {value === AppTabs.SCORESHEET && <Scoresheet />}
+        {value === AppTabs.CALCULATOR && <Calculator />}
+        {value === AppTabs.SETTINGS && (
+          <Settings darkMode={darkMode} onThemeChange={onThemeChange} />
         )}
       </Box>
 
@@ -95,7 +60,7 @@ function App({ darkMode, onThemeChange }: AppProps) {
         <BottomNavigation
           value={value}
           onChange={(_event, newValue) => {
-            setValue(newValue)
+            setValue(newValue as AppTabType)
           }}
           showLabels
         >
