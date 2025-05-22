@@ -1,180 +1,190 @@
 import { 
   Container, 
-  Typography, 
   Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow,
   Button,
-  Stack
+  Typography
 } from '@mui/material'
 import { useState } from 'react'
 import ChaseStrategy from './components/ChaseStrategy'
 import EditGameSetting from './components/EditGameSetting'
+import GameHeader from './components/GameHeader'
+import ScoreForm from './components/ScoreForm'
+import { type GameStateRecord, type PlayerPositionType, RoundState } from '@/types/game-state'
+import { INITIAL_GAME_STATE } from '@/constants'
+import { cellStyle, actionCellStyle } from './styles'
+import { scoreCompute } from '@/utils/zung-jung/score'
 
 export default function Scoresheet() {
-  const [gameTitle, setGameTitle] = useState('新游戏')
-  const [players, setPlayers] = useState({
-    east: '东家',
-    south: '南家',
-    west: '西家',
-    north: '北家'
-  })
-  const [timeStart, setTimeStart] = useState<number | null>(null)
-
+  const [gameState, setGameState] = useState<GameStateRecord>(INITIAL_GAME_STATE)
   const [chaseStrategyOpen, setChaseStrategyOpen] = useState(false)
   const [editGameSettingOpen, setEditGameSettingOpen] = useState(false)
+  const [scoringRound, setScoringRound] = useState<number | null>(null)
 
   const handleClearTable = () => {
-    // 清空表格的功能将在后续实现
-    console.log('清空表格')
+    setGameState(INITIAL_GAME_STATE)
   }
 
   const handleStartGame = () => {
-    setTimeStart(Date.now())
+    setGameState(prev => ({
+      ...prev,
+      startTime: Date.now(),
+      currentState: 1
+    }))
   }
 
-  const getFontSize = (text: string) => {
-    const length = text.length
-    if (length <= 3) return '1rem'
-    return `${1 - (length - 3) * 0.15}rem`
+  const handleEditGameSetting = (title: string, players: Record<PlayerPositionType, string>) => {
+    setGameState(prev => ({
+      ...prev,
+      title,
+      players
+    }))
   }
 
-  const cellStyle = {
-    borderRight: '1px solid rgba(224, 224, 224, 1)',
-    '&:last-child': {
-      borderRight: 'none'
-    },
-    textAlign: 'center',
-    width: '16.666%',
-    px: 0
+  const handleStartScoring = (roundIndex: number) => {
+    setScoringRound(roundIndex)
   }
 
-  const headerCellStyle = (text: string) => ({
-    ...cellStyle,
-    fontSize: getFontSize(text),
-    fontWeight: 'bold',
-    py: 0.5
-  })
-
-  const firstColumnStyle = (text: string) => ({
-    ...cellStyle,
-    fontSize: getFontSize(text),
-    py: 0.5
-  })
-
-  const actionCellStyle = {
-    ...cellStyle,
-    p: 0
+  const handleBackFromScoring = () => {
+    setScoringRound(null)
   }
+
+  const handleSubmitScore = (data: {
+    isDraw: boolean
+    isTimeout: boolean
+    score: number
+    winner: number
+    loser: number
+  }) => {
+    setGameState(prev => {
+      const newRounds = [...prev.rounds]
+      const currentRound = newRounds[prev.currentState - 1]
+
+      // 设置回合状态
+      if (data.isDraw) {
+        currentRound.roundState = RoundState.DRAW
+      } else if (data.isTimeout) {
+        currentRound.roundState = RoundState.TIMEOUT
+      } else {
+        currentRound.roundState = RoundState.WON
+      }
+
+      // 设置分数、和牌者和点炮者
+      if (data.isDraw || data.isTimeout) {
+        currentRound.score = [0, 0, 0, 0]
+      } else {
+        currentRound.score = scoreCompute({
+          score: data.score,
+          winner: data.winner,
+          loser: data.loser
+        })
+      }
+      currentRound.winner = data.winner
+      currentRound.loser = data.loser
+
+      // 更新游戏进度
+      const nextState = prev.currentState + 1
+      const newState = nextState > 16 ? 100 : nextState
+
+      return {
+        ...prev,
+        rounds: newRounds,
+        currentState: newState
+      }
+    })
+
+    setScoringRound(null)
+  }
+
+  // 计算总分
+  const calculateTotalScores = () => {
+    const totalScores = [0, 0, 0, 0]
+    gameState.rounds.forEach(round => {
+      if (round.score) {
+        round.score.forEach((score, index) => {
+          totalScores[index] += score
+        })
+      }
+    })
+    return totalScores
+  }
+
+  // 计算排名
+  const calculateRankings = (scores: number[]) => {
+    const indexedScores = scores.map((score, index) => ({ score, index }))
+    indexedScores.sort((a, b) => b.score - a.score)
+    return indexedScores.map(item => item.index)
+  }
+
+  if (scoringRound !== null) {
+    return (
+      <ScoreForm
+        roundNumber={scoringRound + 1}
+        onBack={handleBackFromScoring}
+        onSubmit={handleSubmitScore}
+      />
+    )
+  }
+
+  const totalScores = calculateTotalScores()
+  const rankings = calculateRankings(totalScores)
 
   return (
     <Container maxWidth="sm" sx={{ mt: 2, px: 0 }}>
-      <Typography variant="h5" component="h1" gutterBottom>
-        {gameTitle}
-      </Typography>
-      
-      <Stack 
-        direction="row" 
-        spacing={2} 
-        sx={{ 
-          mb: 2,
-          justifyContent: 'space-between',
-          width: '100%',
-          px: 2,
-        }}
-      >
-        <Button 
-          variant="contained" 
-          onClick={() => setChaseStrategyOpen(true)}
-        >
-          追分策略
-        </Button>
-        <Button 
-          variant="contained" 
-          color="warning"
-          onClick={handleClearTable}
-        >
-          清空表格
-        </Button>
-        <Button 
-          variant="contained" 
-          color="secondary"
-          onClick={() => setEditGameSettingOpen(true)}
-        >
-          编辑信息
-        </Button>
-      </Stack>
+      <GameHeader
+        title={gameState.title}
+        players={gameState.players}
+        currentState={gameState.currentState}
+        totalScores={totalScores}
+        rankings={rankings}
+        onStartGame={handleStartGame}
+        onEditGameSetting={() => setEditGameSettingOpen(true)}
+        onClearTable={handleClearTable}
+        onOpenChaseStrategy={() => setChaseStrategyOpen(true)}
+      />
 
       <TableContainer component={Paper} elevation={3}>
         <Table size="small" stickyHeader sx={{ tableLayout: 'fixed' }}>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={headerCellStyle('选手姓名')}>选手姓名</TableCell>
-              <TableCell sx={headerCellStyle(players.east)}>{players.east}</TableCell>
-              <TableCell sx={headerCellStyle(players.south)}>{players.south}</TableCell>
-              <TableCell sx={headerCellStyle(players.west)}>{players.west}</TableCell>
-              <TableCell sx={headerCellStyle(players.north)}>{players.north}</TableCell>
-              <TableCell sx={actionCellStyle}>操作</TableCell>
-            </TableRow>
-          </TableHead>
           <TableBody>
-            {/* 开局座位显示行 */}
-            <TableRow>
-              <TableCell sx={firstColumnStyle('开局座位')}>开局座位</TableCell>
-              <TableCell sx={cellStyle}>东</TableCell>
-              <TableCell sx={cellStyle}>南</TableCell>
-              <TableCell sx={cellStyle}>西</TableCell>
-              <TableCell sx={cellStyle}>北</TableCell>
-              <TableCell sx={actionCellStyle}></TableCell>
-            </TableRow>
-
-            {/* 总分显示行 */}
-            <TableRow>
-              <TableCell sx={firstColumnStyle('总分')}>总分</TableCell>
-              <TableCell sx={cellStyle}>0</TableCell>
-              <TableCell sx={cellStyle}>0</TableCell>
-              <TableCell sx={cellStyle}>0</TableCell>
-              <TableCell sx={cellStyle}>0</TableCell>
-              <TableCell sx={actionCellStyle}></TableCell>
-            </TableRow>
-
-            {/* 排名显示行 */}
-            <TableRow>
-              <TableCell sx={firstColumnStyle('排名')}>排名</TableCell>
-              <TableCell sx={cellStyle}>-</TableCell>
-              <TableCell sx={cellStyle}>-</TableCell>
-              <TableCell sx={cellStyle}>-</TableCell>
-              <TableCell sx={cellStyle}>-</TableCell>
-              <TableCell sx={actionCellStyle}>
-                {!timeStart && (
-                  <Button
-                    variant="text"
-                    color="primary"
-                    size="small"
-                    onClick={handleStartGame}
-                    sx={{
-                      p: 0
-                    }}
-                  >
-                    开始
-                  </Button>
-                )}
-              </TableCell>
-            </TableRow>
-
-            {/* 16局游戏记录 */}
-            {Array.from({ length: 16 }, (_, i) => (
+            {gameState.rounds.map((round, i) => (
               <TableRow key={i}>
                 <TableCell sx={cellStyle}>{i + 1}</TableCell>
-                <TableCell sx={cellStyle}></TableCell>
-                <TableCell sx={cellStyle}></TableCell>
-                <TableCell sx={cellStyle}></TableCell>
-                <TableCell sx={cellStyle}></TableCell>
-                <TableCell sx={actionCellStyle}></TableCell>
+                {round.score ? (
+                  round.score.map((score, idx) => (
+                    <TableCell key={idx} sx={cellStyle}>
+                      <Typography
+                        variant="body2"
+                        color={score > 0 ? 'error' : score < 0 ? 'success.main' : 'text.disabled'}
+                      >
+                        {score > 0 ? `+${score}` : score}
+                      </Typography>
+                    </TableCell>
+                  ))
+                ) : (
+                  <>
+                    <TableCell sx={cellStyle}></TableCell>
+                    <TableCell sx={cellStyle}></TableCell>
+                    <TableCell sx={cellStyle}></TableCell>
+                    <TableCell sx={cellStyle}></TableCell>
+                  </>
+                )}
+                <TableCell sx={actionCellStyle}>
+                  {gameState.currentState === i + 1 && (
+                    <Button
+                      variant="text"
+                      color="primary"
+                      size="small"
+                      onClick={() => handleStartScoring(i)}
+                      sx={{ p: 0 }}
+                    >
+                      计分
+                    </Button>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -189,8 +199,10 @@ export default function Scoresheet() {
       <EditGameSetting
         open={editGameSettingOpen}
         onClose={() => setEditGameSettingOpen(false)}
-        setGameTitle={setGameTitle}
-        setPlayers={setPlayers}
+        setGameTitle={(title) => handleEditGameSetting(title, gameState.players)}
+        setPlayers={(players) => handleEditGameSetting(gameState.title, players)}
+        gameTitle={gameState.title}
+        players={gameState.players}
       />
     </Container>
   )
