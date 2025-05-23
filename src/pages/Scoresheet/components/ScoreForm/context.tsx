@@ -63,6 +63,7 @@ export function ScoreFormProvider({
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useScoreForm() {
   const context = useContext(ScoreFormContext)
   if (!context) {

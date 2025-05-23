@@ -1,10 +1,13 @@
 import { Box, Typography, Radio, RadioGroup, FormControlLabel, Paper } from '@mui/material'
 import { useScoreForm } from '../../context'
 import { scoreCompute } from '@/utils/zung-jung/score'
+import { type PlayerPositionType } from '@/types/game-state'
 
-const PLAYER_NAMES = ['东', '南', '西', '北']
+interface PlayerStatusProps {
+  players: Record<PlayerPositionType, string>
+}
 
-export default function PlayerStatus() {
+export default function PlayerStatus({ players }: PlayerStatusProps) {
   const { winner, loser, setWinner, setLoser, isDrawOrTimeout, score } = useScoreForm()
 
   // 计算分数变动
@@ -16,7 +19,7 @@ export default function PlayerStatus() {
     <Paper sx={{ p: 2, mb: 2 }}>
       {/* 玩家名字 */}
       <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
-        {PLAYER_NAMES.map((name) => (
+        {Object.values(players).map((name) => (
           <Box key={name} sx={{ flex: 1, textAlign: 'center' }}>
             <Typography variant="subtitle1">{name}</Typography>
           </Box>
@@ -42,7 +45,7 @@ export default function PlayerStatus() {
         onChange={(_, value) => setWinner(Number(value))}
         sx={{ justifyContent: 'center', mb: 1 }}
       >
-        {PLAYER_NAMES.map((_, idx) => (
+        {Object.values(players).map((_, idx) => (
           <FormControlLabel
             key={idx}
             value={idx}
@@ -59,12 +62,12 @@ export default function PlayerStatus() {
         onChange={(_, value) => setLoser(Number(value))}
         sx={{ justifyContent: 'center' }}
       >
-        {PLAYER_NAMES.map((_, idx) => (
+        {Object.values(players).map((_, idx) => (
           <FormControlLabel
             key={idx}
             value={idx}
             control={<Radio disabled={isDrawOrTimeout} />}
-            label={winner === idx ? '自摸' : '点炮'}
+            label={'点炮'}
             sx={{ flex: 1, mx: 0.5 }}
           />
         ))}

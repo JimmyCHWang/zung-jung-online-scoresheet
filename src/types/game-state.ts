@@ -38,7 +38,8 @@ export interface RoundRecord {
 export interface GameStateRecord {
   title: string
   players: Record<PlayerPositionType, string>
-  startTime: number
+  startTime?: number
+  endTime?: number
   currentState: GameStateType  // 0: 未开始, 1-99: 正在进行第x局, 100: 已结束
   rounds: RoundRecord[]
 }

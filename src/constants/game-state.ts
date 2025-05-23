@@ -1,6 +1,6 @@
-import { type GameStateRecordType, RoundState, PlayerPosition } from './types/game-state'
+import { type GameStateRecord, RoundState, PlayerPosition } from '../types/game-state'
 
-export const INITIAL_GAME_STATE: GameStateRecordType = {
+export const INITIAL_GAME_STATE: GameStateRecord = {
   title: '新游戏',
   players: {
     [PlayerPosition.EAST]: '东家',
@@ -8,11 +8,11 @@ export const INITIAL_GAME_STATE: GameStateRecordType = {
     [PlayerPosition.WEST]: '西家',
     [PlayerPosition.NORTH]: '北家'
   },
-  startTime: null,
-  endTime: null,
   rounds: Array.from({ length: 16 }, () => ({
-    state: RoundState.NOT_STARTED
+    roundState: RoundState.NOT_STARTED,
+    score: [0, 0, 0, 0],
+    winner: -1,
+    loser: -1
   })),
   currentState: 0
 }
- 

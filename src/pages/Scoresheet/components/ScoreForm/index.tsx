@@ -14,9 +14,20 @@ import { useState } from 'react'
 import ScoreAndState from './components/ScoreAndState'
 import PlayerStatus from './components/PlayerStatus'
 import { ScoreFormProvider, useScoreForm } from './context'
+import { type PlayerPositionType } from '@/types/game-state'
+
+const WIND_NAMES = ['东', '南', '西', '北']
+
+// 生成局数名称
+const getRoundName = (index: number) => {
+  const outerWind = WIND_NAMES[Math.floor(index / 4)]
+  const innerWind = WIND_NAMES[index % 4]
+  return `${outerWind}风${innerWind}`
+}
 
 interface ScoreFormProps {
   roundNumber: number
+  players: Record<PlayerPositionType, string>
   onBack: () => void
   onSubmit: (data: {
     isDraw: boolean
@@ -27,7 +38,7 @@ interface ScoreFormProps {
   }) => void
 }
 
-function ScoreFormContent({ roundNumber, onBack, onSubmit }: ScoreFormProps) {
+function ScoreFormContent({ roundNumber, players, onBack, onSubmit }: ScoreFormProps) {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const { isDraw, isTimeout, score, winner, loser } = useScoreForm()
 
@@ -96,7 +107,7 @@ function ScoreFormContent({ roundNumber, onBack, onSubmit }: ScoreFormProps) {
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h6" sx={{ flex: 1, textAlign: 'center' }}>
-          第 {roundNumber} 局
+          {getRoundName(roundNumber - 1)}
         </Typography>
         <Box sx={{ width: 48 }} /> {/* 为了保持标题居中 */}
       </Box>
@@ -104,7 +115,7 @@ function ScoreFormContent({ roundNumber, onBack, onSubmit }: ScoreFormProps) {
       {/* 表单内容区域 */}
       <Box sx={{ flex: 1, p: 2, overflow: 'auto' }}>
         <ScoreAndState />
-        <PlayerStatus />
+        <PlayerStatus players={players} />
       </Box>
 
       {/* 底部提交按钮 */}

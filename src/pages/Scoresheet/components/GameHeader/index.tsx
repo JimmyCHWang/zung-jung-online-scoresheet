@@ -11,6 +11,8 @@ import {
 import { PlayerPosition } from '@/types/game-state'
 import { headerCellStyle, cellStyle, firstColumnStyle, actionCellStyle } from '../../styles'
 
+const RANK_NAMES = ['一', '二', '三', '四']
+
 interface GameHeaderProps {
   title: string
   players: Record<string, string>
@@ -101,9 +103,9 @@ export default function GameHeader({
               <TableCell key={index} sx={cellStyle}>
                 <Typography
                   variant="body2"
-                  color={score > 0 ? 'error' : score < 0 ? 'success.main' : 'text.disabled'}
+                  color={score > 0 ? 'error' : score < 0 ? 'success.main' : 'text.primary'}
                 >
-                  {score > 0 ? `+${score}` : score}
+                  {score >= 0 ? `+${score}` : score}
                 </Typography>
               </TableCell>
             ))}
@@ -115,7 +117,7 @@ export default function GameHeader({
             <TableCell sx={firstColumnStyle('排名')}>排名</TableCell>
             {rankings.map((rank, index) => (
               <TableCell key={index} sx={cellStyle}>
-                {rank + 1}
+                {currentState > 1 ? RANK_NAMES[rank] : ''}
               </TableCell>
             ))}
             <TableCell sx={actionCellStyle}>
