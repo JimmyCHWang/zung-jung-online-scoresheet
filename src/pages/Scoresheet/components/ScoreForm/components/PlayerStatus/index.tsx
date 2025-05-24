@@ -67,7 +67,7 @@ export default function PlayerStatus({ players }: PlayerStatusProps) {
             key={idx}
             value={idx}
             control={<Radio disabled={isDrawOrTimeout} />}
-            label={'点炮'}
+            label={winner === idx ? '自摸' : '点炮'}
             sx={{ flex: 1, mx: 0.5 }}
           />
         ))}

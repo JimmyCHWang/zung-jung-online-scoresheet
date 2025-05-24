@@ -3,7 +3,7 @@ import { ZUNG_JUNG_FAN_ID } from "./fan";
 
 export const ZUNG_JUNG_FAN_CN: Record<ZUNG_JUNG_FAN_ID, string> = {
   [ZUNG_JUNG_FAN_ID.PING_HU]: '平和',
-  [ZUNG_JUNG_FAN_ID.MEN_QIAN_QING]: '门清',
+  [ZUNG_JUNG_FAN_ID.MEN_QIAN_QING]: '门前清',
   [ZUNG_JUNG_FAN_ID.DUAN_YUAO_JIU]: '断幺九',
   [ZUNG_JUNG_FAN_ID.HUN_YI_SE]: '混一色',
   [ZUNG_JUNG_FAN_ID.QING_YI_SE]: '清一色',

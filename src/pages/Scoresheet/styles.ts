@@ -1,9 +1,11 @@
 import { type SxProps, type Theme } from '@mui/material'
 
 export const getFontSize = (text: string) => {
-  const length = text.length
-  if (length <= 3) return '1rem'
-  return `${1 - (length - 3) * 0.15}rem`
+  const length = /^[a-zA-Z0-9]+$/.test(text) ? Math.floor(text.length / 2) : text.length
+  if (length <= 2) return 16
+  if (length <= 4) return 14
+  if (length <= 6) return 12
+  return 10
 }
 
 export const cellStyle: SxProps<Theme> = {

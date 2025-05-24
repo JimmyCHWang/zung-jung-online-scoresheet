@@ -15,6 +15,8 @@ import ScoreAndState from './components/ScoreAndState'
 import PlayerStatus from './components/PlayerStatus'
 import { ScoreFormProvider, useScoreForm } from './context'
 import { type PlayerPositionType } from '@/types/game-state'
+import FanSelector from './components/FanSelector'
+import { FanStates } from '@/types'
 
 const WIND_NAMES = ['东', '南', '西', '北']
 
@@ -29,18 +31,19 @@ interface ScoreFormProps {
   roundNumber: number
   players: Record<PlayerPositionType, string>
   onBack: () => void
-  onSubmit: (data: {
-    isDraw: boolean
-    isTimeout: boolean
-    score: number
+  onSubmit: (params: {
     winner: number
     loser: number
+    score: number
+    isDraw: boolean
+    isTimeout: boolean
+    fanStates: FanStates
   }) => void
 }
 
-function ScoreFormContent({ roundNumber, players, onBack, onSubmit }: ScoreFormProps) {
+const ScoreFormContent = ({ roundNumber, players, onBack }: Omit<ScoreFormProps, 'onSubmit'>) => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
-  const { isDraw, isTimeout, score, winner, loser } = useScoreForm()
+  const { isDraw, isTimeout, score, winner, loser, handleSubmit } = useScoreForm()
 
   const handleBackClick = () => {
     setConfirmDialogOpen(true)
@@ -51,33 +54,33 @@ function ScoreFormContent({ roundNumber, players, onBack, onSubmit }: ScoreFormP
     onBack()
   }
 
-  const handleSubmit = () => {
-    // 1. 如果和局或超时，直接通过，并清理相关数据
+  const handleConfirm = () => {
+    // 如果是和局或超时，直接通过
     if (isDraw || isTimeout) {
-      onSubmit({ 
-        isDraw, 
-        isTimeout, 
-        score: 0, 
-        winner: -1, 
-        loser: -1 
-      })
+      handleSubmit()
       return
     }
 
-    // 2. 校验分数是否为正整数
-    if (!Number.isInteger(score) || score <= 0) {
-      alert('请输入正确的分数')
+    // 检查是否选择了和牌者
+    if (winner === -1) {
+      alert('请选择和牌者')
       return
     }
 
-    // 3. 校验和牌者和点炮者是否都已选择
-    if (winner === -1 || loser === -1) {
-      alert('请选择和牌者和点炮者')
+    // 检查是否选择了点炮者（非自摸时）
+    if (loser === -1) {
+      alert('请选择点炮者')
+      return
+    }
+
+    // 检查分数是否有效
+    if (score <= 0) {
+      alert('分数必须大于0')
       return
     }
 
     // 所有校验通过，提交数据
-    onSubmit({ isDraw, isTimeout, score, winner, loser })
+    handleSubmit()
   }
 
   return (
@@ -116,6 +119,7 @@ function ScoreFormContent({ roundNumber, players, onBack, onSubmit }: ScoreFormP
       <Box sx={{ flex: 1, p: 2, overflow: 'auto' }}>
         <ScoreAndState />
         <PlayerStatus players={players} />
+        <FanSelector />
       </Box>
 
       {/* 底部提交按钮 */}
@@ -129,7 +133,7 @@ function ScoreFormContent({ roundNumber, players, onBack, onSubmit }: ScoreFormP
         <Button 
           variant="contained" 
           size="large"
-          onClick={handleSubmit}
+          onClick={handleConfirm}
           sx={{ minWidth: 200 }}
         >
           提交
@@ -158,10 +162,12 @@ function ScoreFormContent({ roundNumber, players, onBack, onSubmit }: ScoreFormP
   )
 }
 
-export default function ScoreForm(props: ScoreFormProps) {
+const ScoreForm = (props: ScoreFormProps) => {
   return (
-    <ScoreFormProvider>
+    <ScoreFormProvider onSubmit={props.onSubmit}>
       <ScoreFormContent {...props} />
     </ScoreFormProvider>
   )
-} 
+}
+
+export default ScoreForm 

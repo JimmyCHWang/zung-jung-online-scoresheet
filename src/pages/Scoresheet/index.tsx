@@ -14,15 +14,19 @@ import {
   DialogContentText,
   DialogActions
 } from '@mui/material'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ChaseStrategy from './components/ChaseStrategy'
 import EditGameSetting from './components/EditGameSetting'
 import GameHeader from './components/GameHeader'
 import ScoreForm from './components/ScoreForm'
-import { type GameStateRecord, type PlayerPositionType, RoundState } from '@/types/game-state'
+import TimeDisplay from './components/TimeDisplay'
+import { type GameStateRecord, type PlayerPositionType, type RoundStateType, GameState, RoundState } from '@/types/game-state'
 import { INITIAL_GAME_STATE } from '@/constants/game-state'
 import { cellStyle, actionCellStyle } from './styles'
-import { scoreCompute } from '@/utils/zung-jung/score'
+import { scoreCompute, getFanText } from '@/utils/zung-jung/score'
+import { type RoundRecord, type FanStates } from '@/types'
+
+const STORAGE_KEY = 'zung-jung-game-state'
 
 const WIND_NAMES = ['东', '南', '西', '北']
 
@@ -34,11 +38,20 @@ const getRoundName = (index: number) => {
 }
 
 export default function Scoresheet() {
-  const [gameState, setGameState] = useState<GameStateRecord>(INITIAL_GAME_STATE)
+  const [gameState, setGameState] = useState<GameStateRecord>(() => {
+    // 从 localStorage 中读取状态，如果没有则使用初始状态
+    const savedState = localStorage.getItem(STORAGE_KEY)
+    return savedState ? JSON.parse(savedState) : INITIAL_GAME_STATE
+  })
   const [chaseStrategyOpen, setChaseStrategyOpen] = useState(false)
   const [editGameSettingOpen, setEditGameSettingOpen] = useState(false)
   const [scoringRound, setScoringRound] = useState<number | null>(null)
   const [clearTableDialogOpen, setClearTableDialogOpen] = useState(false)
+
+  // 监听 gameState 的变化，同步到 localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState))
+  }, [gameState])
 
   const handleClearTable = () => {
     // 如果游戏未开始，直接返回
@@ -60,7 +73,8 @@ export default function Scoresheet() {
         roundState: RoundState.NOT_STARTED,
         score: [0, 0, 0, 0],
         winner: -1,
-        loser: -1
+        loser: -1,
+        fanStates: {}
       }))
     }))
     setClearTableDialogOpen(false)
@@ -90,50 +104,44 @@ export default function Scoresheet() {
     setScoringRound(null)
   }
 
-  const handleSubmitScore = (data: {
-    isDraw: boolean
-    isTimeout: boolean
-    score: number
+  const handleSubmit = (data: {
     winner: number
     loser: number
+    score: number
+    isDraw: boolean
+    isTimeout: boolean
+    fanStates: FanStates
   }) => {
+    let roundState: RoundStateType = RoundState.WON
+    if (data.isDraw) {
+      roundState = RoundState.DRAW
+    } else if (data.isTimeout) {
+      roundState = RoundState.TIMEOUT
+    }
+
+    const record: RoundRecord = {
+      roundState,
+      score: scoreCompute({
+        score: data.score,
+        winner: data.winner,
+        loser: data.loser
+      }),
+      winner: data.winner,
+      loser: data.loser,
+      fanStates: data.fanStates
+    }
+
     setGameState(prev => {
       const newRounds = [...prev.rounds]
-      const currentRound = newRounds[prev.currentState - 1]
-
-      // 设置回合状态
-      if (data.isDraw) {
-        currentRound.roundState = RoundState.DRAW
-      } else if (data.isTimeout) {
-        currentRound.roundState = RoundState.TIMEOUT
-      } else {
-        currentRound.roundState = RoundState.WON
-      }
-
-      // 设置分数、和牌者和点炮者
-      if (data.isDraw || data.isTimeout) {
-        currentRound.score = [0, 0, 0, 0]
-      } else {
-        currentRound.score = scoreCompute({
-          score: data.score,
-          winner: data.winner,
-          loser: data.loser
-        })
-      }
-      currentRound.winner = data.winner
-      currentRound.loser = data.loser
-
-      // 更新游戏进度
+      newRounds[prev.currentState - 1] = record
       const nextState = prev.currentState + 1
-      const newState = nextState > 16 ? 100 : nextState
-
       return {
         ...prev,
         rounds: newRounds,
-        currentState: newState
+        currentState: nextState > 16 ? GameState.FINISHED : nextState,
+        endTime: nextState > 16 ? Date.now() : prev.endTime
       }
     })
-
     setScoringRound(null)
   }
 
@@ -178,13 +186,34 @@ export default function Scoresheet() {
     return rankings
   }
 
+  const handleForceEnd = () => {
+    setGameState(prev => {
+      const newRounds = prev.rounds.map(round => {
+        if (round.roundState === RoundState.NOT_STARTED) {
+          return {
+            ...round,
+            roundState: RoundState.TIMEOUT
+          }
+        }
+        return round
+      })
+
+      return {
+        ...prev,
+        rounds: newRounds,
+        endTime: Date.now(),
+        currentState: GameState.FINISHED // 设置为结束
+      }
+    })
+  }
+
   if (scoringRound !== null) {
     return (
       <ScoreForm
         roundNumber={scoringRound + 1}
         players={gameState.players}
         onBack={handleBackFromScoring}
-        onSubmit={handleSubmitScore}
+        onSubmit={handleSubmit}
       />
     )
   }
@@ -204,6 +233,7 @@ export default function Scoresheet() {
         onEditGameSetting={() => setEditGameSettingOpen(true)}
         onClearTable={handleClearTable}
         onOpenChaseStrategy={() => setChaseStrategyOpen(true)}
+        onForceEnd={handleForceEnd}
       />
 
       <TableContainer component={Paper} elevation={3}>
@@ -232,7 +262,7 @@ export default function Scoresheet() {
                   ))
                 )}
                 <TableCell sx={actionCellStyle}>
-                  {gameState.currentState === i + 1 && (
+                  {gameState.currentState === i + 1 ? (
                     <Button
                       variant="text"
                       color="primary"
@@ -242,6 +272,12 @@ export default function Scoresheet() {
                     >
                       计分
                     </Button>
+                  ) : round.roundState !== RoundState.NOT_STARTED && (
+                    <Typography variant="body2" color="text.secondary">
+                      {round.roundState === RoundState.DRAW ? '荒庄' :
+                       round.roundState === RoundState.TIMEOUT ? '超时' :
+                       getFanText(round.fanStates)}
+                    </Typography>
                   )}
                 </TableCell>
               </TableRow>
@@ -249,6 +285,12 @@ export default function Scoresheet() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TimeDisplay
+        gameState={gameState.currentState}
+        startTime={gameState.startTime}
+        endTime={gameState.endTime}
+      />
 
       <ChaseStrategy 
         open={chaseStrategyOpen}

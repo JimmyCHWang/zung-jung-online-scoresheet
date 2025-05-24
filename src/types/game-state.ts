@@ -1,3 +1,5 @@
+import { FanStates } from './zung-jung'
+
 // 玩家位置枚举
 export const PlayerPosition = {
   EAST: 'east',
@@ -16,7 +18,7 @@ export const RoundState = {
   TIMEOUT: 3
 } as const
 
-export type RoundStateType = typeof RoundState[keyof typeof RoundState]
+export type RoundStateType = 0 | 1 | 2 | 3
 
 // 游戏整体状态
 export const GameState = {
@@ -32,6 +34,7 @@ export interface RoundRecord {
   score: number[]  // 四名玩家的分数变动数组
   winner: number   // 和牌者索引（0-3）
   loser: number    // 点炮者索引（0-3），自摸时为-1
+  fanStates: FanStates
 }
 
 // 游戏状态类型

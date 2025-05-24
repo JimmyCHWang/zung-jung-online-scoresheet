@@ -36,4 +36,43 @@ export function scoreCompute({ score, winner, loser }: { score: number; winner: 
   }
 
   return scoreChanges
+}
+
+import { ZUNG_JUNG_FAN_ID, ZUNG_JUNG_FAN_SCORE, ZUNG_JUNG_FAN_CN } from '@/constants/zung-jung'
+import { FanStates } from '@/types'
+
+export const calculateTotalScore = (fanStates: FanStates): number => {
+  return Object.entries(fanStates).reduce((total, [fanId, count]) => {
+    if (count === undefined) return total
+    const typedFanId = Number(fanId) as ZUNG_JUNG_FAN_ID
+    return total + ZUNG_JUNG_FAN_SCORE[typedFanId] * count
+  }, 0)
+}
+
+export function getFanText(fanStates: FanStates): string {
+  // 如果没有番种，返回空字符串
+  if (Object.keys(fanStates).length === 0) {
+    return ''
+  }
+
+  // 找出最大的番值
+  const maxValue = Math.max(...Object.entries(fanStates).map(([id, count]) => {
+    const fanId = Number(id) as ZUNG_JUNG_FAN_ID
+    return ZUNG_JUNG_FAN_SCORE[fanId] * count
+  }))
+
+  // 找出所有达到最大值的番种
+  const maxFans = Object.entries(fanStates)
+    .filter(([id, count]) => {
+      const fanId = Number(id) as ZUNG_JUNG_FAN_ID
+      return ZUNG_JUNG_FAN_SCORE[fanId] * count === maxValue
+    })
+    .map(([id]) => Number(id) as ZUNG_JUNG_FAN_ID)
+
+  // 如果有多个最大番，返回枚举值最小的那个
+  const minEnumFan = maxFans.reduce((min, current) => 
+    current < min ? current : min
+  )
+
+  return ZUNG_JUNG_FAN_CN[minEnumFan]
 } 

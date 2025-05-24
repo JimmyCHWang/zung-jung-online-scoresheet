@@ -6,10 +6,16 @@ import {
   TableBody,
   TableCell,
   TableHead,
-  TableRow
+  TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material'
 import { PlayerPosition } from '@/types/game-state'
 import { headerCellStyle, cellStyle, firstColumnStyle, actionCellStyle } from '../../styles'
+import { useState } from 'react'
 
 const RANK_NAMES = ['一', '二', '三', '四']
 
@@ -23,6 +29,7 @@ interface GameHeaderProps {
   onEditGameSetting: () => void
   onClearTable: () => void
   onOpenChaseStrategy: () => void
+  onForceEnd: () => void
 }
 
 export default function GameHeader({
@@ -34,8 +41,20 @@ export default function GameHeader({
   onStartGame,
   onEditGameSetting,
   onClearTable,
-  onOpenChaseStrategy
+  onOpenChaseStrategy,
+  onForceEnd
 }: GameHeaderProps) {
+  const [forceEndDialogOpen, setForceEndDialogOpen] = useState(false)
+
+  const handleForceEnd = () => {
+    setForceEndDialogOpen(true)
+  }
+
+  const handleConfirmForceEnd = () => {
+    onForceEnd()
+    setForceEndDialogOpen(false)
+  }
+
   return (
     <>
       <Typography variant="h5" component="h1" gutterBottom>
@@ -121,7 +140,7 @@ export default function GameHeader({
               </TableCell>
             ))}
             <TableCell sx={actionCellStyle}>
-              {currentState === 0 && (
+              {currentState === 0 ? (
                 <Button
                   variant="text"
                   color="primary"
@@ -133,11 +152,42 @@ export default function GameHeader({
                 >
                   开始
                 </Button>
+              ) : currentState < 17 && (
+                <Button
+                  variant="text"
+                  color="warning"
+                  size="small"
+                  onClick={handleForceEnd}
+                  sx={{
+                    p: 0
+                  }}
+                >
+                  强制结束
+                </Button>
               )}
             </TableCell>
           </TableRow>
         </TableBody>
       </Table>
+
+      {/* 强制结束确认对话框 */}
+      <Dialog
+        open={forceEndDialogOpen}
+        onClose={() => setForceEndDialogOpen(false)}
+      >
+        <DialogTitle>确认强制结束</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            强制结束将会把所有未开始的局设置为超时状态，并结束当前游戏。确定要继续吗？
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setForceEndDialogOpen(false)}>取消</Button>
+          <Button onClick={handleConfirmForceEnd} color="warning" autoFocus>
+            确定
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 } 
