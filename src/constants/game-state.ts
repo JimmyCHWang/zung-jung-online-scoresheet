@@ -12,7 +12,8 @@ export const INITIAL_GAME_STATE: GameStateRecord = {
     roundState: RoundState.NOT_STARTED,
     score: [0, 0, 0, 0],
     winner: -1,
-    loser: -1
+    loser: -1,
+    fanStates: {}
   })),
   currentState: 0
 }
