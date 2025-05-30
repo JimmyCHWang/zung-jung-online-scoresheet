@@ -10,6 +10,13 @@ export const PlayerPosition = {
 
 export type PlayerPositionType = 'east' | 'south' | 'west' | 'north'
 
+export const NumberToPlayerPosition = {
+  0: 'east',
+  1: 'south',
+  2: 'west',
+  3: 'north'
+} as const
+
 // 单局游戏状态枚举
 export const RoundState = {
   NOT_STARTED: 0,

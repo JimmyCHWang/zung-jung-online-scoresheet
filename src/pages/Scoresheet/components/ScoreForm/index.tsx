@@ -31,7 +31,7 @@ interface ScoreFormProps {
   roundNumber: number
   players: Record<PlayerPositionType, string>
   onBack: () => void
-  onSubmit: (params: {
+  onSubmit: (data: {
     winner: number
     loser: number
     score: number
@@ -39,9 +39,17 @@ interface ScoreFormProps {
     isTimeout: boolean
     fanStates: FanStates
   }) => void
+  initialData?: {
+    winner: number
+    loser: number
+    score: number
+    isDraw: boolean
+    isTimeout: boolean
+    fanStates: FanStates
+  }
 }
 
-const ScoreFormContent = ({ roundNumber, players, onBack }: Omit<ScoreFormProps, 'onSubmit'>) => {
+const ScoreFormContent = ({ roundNumber, players, onBack }: Omit<ScoreFormProps, 'onSubmit' | 'initialData'>) => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const { isDraw, isTimeout, score, winner, loser, handleSubmit } = useScoreForm()
 
@@ -164,7 +172,7 @@ const ScoreFormContent = ({ roundNumber, players, onBack }: Omit<ScoreFormProps,
 
 const ScoreForm = (props: ScoreFormProps) => {
   return (
-    <ScoreFormProvider onSubmit={props.onSubmit}>
+    <ScoreFormProvider onSubmit={props.onSubmit} initialData={props.initialData}>
       <ScoreFormContent {...props} />
     </ScoreFormProvider>
   )

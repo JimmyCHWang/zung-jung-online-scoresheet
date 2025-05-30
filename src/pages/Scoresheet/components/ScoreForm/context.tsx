@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react'
+import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react'
 import { ZUNG_JUNG_FAN_ID, ZUNG_JUNG_STACKING } from '@/constants/zung-jung/fan'
 import { calculateTotalScore } from '@/utils/zung-jung/score'
 import { FanStates } from '@/types'
@@ -32,6 +32,14 @@ interface ScoreFormProviderProps {
     isTimeout: boolean
     fanStates: FanStates
   }) => void
+  initialData?: {
+    winner: number
+    loser: number
+    score: number
+    isDraw: boolean
+    isTimeout: boolean
+    fanStates: FanStates
+  }
 }
 
 const ScoreFormContext = createContext<ScoreFormContextType | null>(null)
@@ -46,15 +54,16 @@ export const useScoreForm = () => {
 
 export function ScoreFormProvider({ 
   children,
-  onSubmit
+  onSubmit,
+  initialData
 }: ScoreFormProviderProps) {
-  const [score, setScore] = useState(0)
-  const [isDraw, setIsDraw] = useState(false)
-  const [isTimeout, setIsTimeout] = useState(false)
-  const [winner, setWinner] = useState(-1)
-  const [loser, setLoser] = useState(-1)
+  const [score, setScore] = useState(initialData?.score ?? 0)
+  const [isDraw, setIsDraw] = useState(initialData?.isDraw ?? false)
+  const [isTimeout, setIsTimeout] = useState(initialData?.isTimeout ?? false)
+  const [winner, setWinner] = useState(initialData?.winner ?? -1)
+  const [loser, setLoser] = useState(initialData?.loser ?? -1)
   const isDrawOrTimeout = isDraw || isTimeout
-  const [fanStates, setFanStates] = useState<FanStates>({})
+  const [fanStates, setFanStates] = useState<FanStates>(initialData?.fanStates ?? {})
 
   const handleScoreChange = (delta: number) => {
     setScore(prev => {
@@ -81,7 +90,7 @@ export function ScoreFormProvider({
     })
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (isDraw || isTimeout) {
       onSubmit({
         winner: -1,
@@ -102,7 +111,7 @@ export function ScoreFormProvider({
       isTimeout,
       fanStates
     })
-  }
+  }, [winner, loser, score, isDraw, isTimeout, fanStates, onSubmit])
 
   useEffect(() => {
     const newScore = calculateTotalScore(fanStates)

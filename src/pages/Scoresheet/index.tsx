@@ -20,7 +20,7 @@ import EditGameSetting from './components/EditGameSetting'
 import GameHeader from './components/GameHeader'
 import ScoreForm from './components/ScoreForm'
 import TimeDisplay from './components/TimeDisplay'
-import { type GameStateRecord, type PlayerPositionType, type RoundStateType, GameState, RoundState } from '@/types/game-state'
+import { type GameStateRecord, type PlayerPositionType, type RoundStateType, GameState, NumberToPlayerPosition, RoundState } from '@/types/game-state'
 import { INITIAL_GAME_STATE } from '@/constants/game-state'
 import { cellStyle, actionCellStyle } from './styles'
 import { scoreCompute, getFanText } from '@/utils/zung-jung/score'
@@ -47,6 +47,8 @@ export default function Scoresheet() {
   const [editGameSettingOpen, setEditGameSettingOpen] = useState(false)
   const [scoringRound, setScoringRound] = useState<number | null>(null)
   const [clearTableDialogOpen, setClearTableDialogOpen] = useState(false)
+  const [editRoundDialogOpen, setEditRoundDialogOpen] = useState(false)
+  const [selectedRound, setSelectedRound] = useState<number | null>(null)
 
   // 监听 gameState 的变化，同步到 localStorage
   useEffect(() => {
@@ -94,6 +96,7 @@ export default function Scoresheet() {
       title,
       players
     }))
+    setEditGameSettingOpen(false)
   }
 
   const handleStartScoring = (roundIndex: number) => {
@@ -131,10 +134,15 @@ export default function Scoresheet() {
       fanStates: data.fanStates
     }
 
+    const isEditing = scoringRound === gameState.currentState
+
     setGameState(prev => {
       const newRounds = [...prev.rounds]
-      newRounds[prev.currentState - 1] = record
-      const nextState = prev.currentState + 1
+      // 如果是编辑已有局，使用 scoringRound，否则使用 currentState - 1
+      const targetRound = isEditing ? scoringRound : prev.currentState - 1
+      newRounds[targetRound] = record
+      // 只有在新增局时才更新 currentState
+      const nextState = isEditing ? prev.currentState : prev.currentState + 1
       return {
         ...prev,
         rounds: newRounds,
@@ -207,13 +215,37 @@ export default function Scoresheet() {
     })
   }
 
+  const handleRoundClick = (roundIndex: number) => {
+    const round = gameState.rounds[roundIndex]
+    if (round.roundState !== RoundState.NOT_STARTED) {
+      setSelectedRound(roundIndex)
+      setEditRoundDialogOpen(true)
+    }
+  }
+
+  const handleEditRound = () => {
+    if (selectedRound !== null) {
+      setScoringRound(selectedRound)
+      setEditRoundDialogOpen(false)
+    }
+  }
+
   if (scoringRound !== null) {
+    const round = gameState.rounds[scoringRound]
     return (
       <ScoreForm
         roundNumber={scoringRound + 1}
         players={gameState.players}
         onBack={handleBackFromScoring}
         onSubmit={handleSubmit}
+        initialData={{
+          winner: round.winner,
+          loser: round.loser,
+          score: round.score[round.winner],
+          isDraw: round.roundState === RoundState.DRAW,
+          isTimeout: round.roundState === RoundState.TIMEOUT,
+          fanStates: round.fanStates
+        }}
       />
     )
   }
@@ -240,7 +272,16 @@ export default function Scoresheet() {
         <Table size="small" stickyHeader sx={{ tableLayout: 'fixed' }}>
           <TableBody>
             {gameState.rounds.map((round, i) => (
-              <TableRow key={i}>
+              <TableRow 
+                key={i}
+                onClick={() => handleRoundClick(i)}
+                sx={{ 
+                  cursor: round.roundState !== RoundState.NOT_STARTED ? 'pointer' : 'default',
+                  '&:hover': {
+                    backgroundColor: round.roundState !== RoundState.NOT_STARTED ? 'action.hover' : 'inherit'
+                  }
+                }}
+              >
                 <TableCell sx={cellStyle}>{getRoundName(i)}</TableCell>
                 {round.roundState === RoundState.NOT_STARTED ? (
                   <>
@@ -300,10 +341,9 @@ export default function Scoresheet() {
       <EditGameSetting
         open={editGameSettingOpen}
         onClose={() => setEditGameSettingOpen(false)}
-        setGameTitle={(title) => handleEditGameSetting(title, gameState.players)}
-        setPlayers={(players) => handleEditGameSetting(gameState.title, players)}
-        gameTitle={gameState.title}
-        players={gameState.players}
+        onSave={handleEditGameSetting}
+        initialTitle={gameState.title}
+        initialPlayers={gameState.players}
       />
 
       {/* 清空表格确认对话框 */}
@@ -321,6 +361,55 @@ export default function Scoresheet() {
           <Button onClick={() => setClearTableDialogOpen(false)}>取消</Button>
           <Button onClick={handleConfirmClearTable} color="warning" autoFocus>
             确定
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 编辑已完成局的确认对话框 */}
+      <Dialog
+        open={editRoundDialogOpen}
+        onClose={() => setEditRoundDialogOpen(false)}
+      >
+        <DialogTitle>
+          {selectedRound !== null && getRoundName(selectedRound)} 详情
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {selectedRound !== null && (
+              <>
+                <Typography variant="body1" paragraph>
+                  {(() => {
+                    const round = gameState.rounds[selectedRound]
+                    if (round.roundState === RoundState.TIMEOUT) {
+                      return '超时。'
+                    }
+                    if (round.roundState === RoundState.DRAW) {
+                      return '荒庄。'
+                    }
+                    const winnerName = gameState.players[NumberToPlayerPosition[round.winner as keyof typeof NumberToPlayerPosition] as PlayerPositionType]
+                    const loserName = gameState.players[NumberToPlayerPosition[round.loser as keyof typeof NumberToPlayerPosition] as PlayerPositionType]
+                    const fanText = getFanText(round.fanStates)
+                    const totalScore = Math.round(round.score[round.winner] / 3)
+                    const isSelfDraw = round.winner === round.loser
+                    
+                    if (isSelfDraw) {
+                      return `${winnerName}自摸${fanText}，总计${totalScore}分。`
+                    } else {
+                      return `${winnerName}和${fanText}，总计${totalScore}分，${loserName}点炮。`
+                    }
+                  })()}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  点击"修改"按钮可以编辑此局的记录。
+                </Typography>
+              </>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditRoundDialogOpen(false)}>取消</Button>
+          <Button onClick={handleEditRound} variant="contained">
+            修改
           </Button>
         </DialogActions>
       </Dialog>

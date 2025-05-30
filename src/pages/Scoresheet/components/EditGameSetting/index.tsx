@@ -6,8 +6,8 @@ import {
   IconButton, 
   TextField, 
   Button, 
-  Stack, 
-  Divider
+  Divider,
+  Box
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { useState } from 'react'
@@ -16,40 +16,23 @@ import { PlayerPosition, type PlayerPositionType } from '../../../../types/game-
 interface EditGameSettingProps {
   open: boolean
   onClose: () => void
-  setGameTitle: (title: string) => void
-  setPlayers: (players: Record<PlayerPositionType, string>) => void
-  gameTitle: string
-  players: Record<PlayerPositionType, string>
+  onSave: (title: string, players: Record<PlayerPositionType, string>) => void
+  initialTitle: string
+  initialPlayers: Record<PlayerPositionType, string>
 }
 
-export default function EditGameSetting({ 
-  open, 
+export default function EditGameSetting({
+  open,
   onClose,
-  setGameTitle,
-  setPlayers,
-  gameTitle,
-  players
+  onSave,
+  initialTitle,
+  initialPlayers
 }: EditGameSettingProps) {
-  const [formData, setFormData] = useState({
-    title: gameTitle,
-    [PlayerPosition.EAST]: players[PlayerPosition.EAST],
-    [PlayerPosition.SOUTH]: players[PlayerPosition.SOUTH],
-    [PlayerPosition.WEST]: players[PlayerPosition.WEST],
-    [PlayerPosition.NORTH]: players[PlayerPosition.NORTH]
-  })
+  const [title, setTitle] = useState(initialTitle)
+  const [players, setPlayers] = useState(initialPlayers)
 
-  const handleSubmit = () => {
-    // 验证所有字段都不为空
-    if (Object.values(formData).every(value => value.trim() !== '')) {
-      setGameTitle(formData.title)
-      setPlayers({
-        [PlayerPosition.EAST]: formData[PlayerPosition.EAST],
-        [PlayerPosition.SOUTH]: formData[PlayerPosition.SOUTH],
-        [PlayerPosition.WEST]: formData[PlayerPosition.WEST],
-        [PlayerPosition.NORTH]: formData[PlayerPosition.NORTH]
-      })
-      onClose()
-    }
+  const handleSave = () => {
+    onSave(title, players)
   }
 
   return (
@@ -80,11 +63,11 @@ export default function EditGameSetting({
         </IconButton>
       </DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ mt: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <TextField
             label="游戏标题"
-            value={formData.title}
-            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             fullWidth
             required
             autoFocus
@@ -92,38 +75,38 @@ export default function EditGameSetting({
           <Divider />
           <TextField
             label="东家名字"
-            value={formData[PlayerPosition.EAST]}
-            onChange={(e) => setFormData(prev => ({ ...prev, [PlayerPosition.EAST]: e.target.value }))}
+            value={players[PlayerPosition.EAST]}
+            onChange={(e) => setPlayers(prev => ({ ...prev, [PlayerPosition.EAST]: e.target.value }))}
             fullWidth
             required
           />
           <TextField
             label="南家名字"
-            value={formData[PlayerPosition.SOUTH]}
-            onChange={(e) => setFormData(prev => ({ ...prev, [PlayerPosition.SOUTH]: e.target.value }))}
+            value={players[PlayerPosition.SOUTH]}
+            onChange={(e) => setPlayers(prev => ({ ...prev, [PlayerPosition.SOUTH]: e.target.value }))}
             fullWidth
             required
           />
           <TextField
             label="西家名字"
-            value={formData[PlayerPosition.WEST]}
-            onChange={(e) => setFormData(prev => ({ ...prev, [PlayerPosition.WEST]: e.target.value }))}
+            value={players[PlayerPosition.WEST]}
+            onChange={(e) => setPlayers(prev => ({ ...prev, [PlayerPosition.WEST]: e.target.value }))}
             fullWidth
             required
           />
           <TextField
             label="北家名字"
-            value={formData[PlayerPosition.NORTH]}
-            onChange={(e) => setFormData(prev => ({ ...prev, [PlayerPosition.NORTH]: e.target.value }))}
+            value={players[PlayerPosition.NORTH]}
+            onChange={(e) => setPlayers(prev => ({ ...prev, [PlayerPosition.NORTH]: e.target.value }))}
             fullWidth
             required
           />
-        </Stack>
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>取消</Button>
-        <Button onClick={handleSubmit} variant="contained">
-          确认
+        <Button onClick={handleSave} variant="contained">
+          保存
         </Button>
       </DialogActions>
     </Dialog>
