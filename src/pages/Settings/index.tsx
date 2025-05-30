@@ -1,4 +1,4 @@
-import { Container, Typography, Paper, FormControlLabel, Switch } from '@mui/material'
+import { Container, Typography, Paper, FormControlLabel, Switch, Box } from '@mui/material'
 
 interface SettingsProps {
   darkMode: boolean;
@@ -22,6 +22,14 @@ export default function Settings({ darkMode, onThemeChange }: SettingsProps) {
           label="深色模式"
         />
       </Paper>
+      <Box sx={{ mt: 4, textAlign: 'center' }}>
+        <Typography variant="body2" color="text.secondary">
+          Copyright © JCarlson {new Date().getFullYear()}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          All Rights Reserved
+        </Typography>
+      </Box>
     </Container>
   )
 } 

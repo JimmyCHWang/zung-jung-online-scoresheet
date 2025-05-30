@@ -7,11 +7,9 @@ import {
   useTheme
 } from '@mui/material'
 import ScoreIcon from '@mui/icons-material/Score'
-import CalculateIcon from '@mui/icons-material/Calculate'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { AppTabs, type AppTabType } from './types'
 import Scoresheet from './pages/Scoresheet'
-import Calculator from './pages/Calculator'
 import Settings from './pages/Settings'
 import './App.css'
 
@@ -39,7 +37,6 @@ function App({ darkMode, onThemeChange }: AppProps) {
         pb: 7 // 为底部导航栏留出空间
       }}>
         {value === AppTabs.SCORESHEET && <Scoresheet />}
-        {value === AppTabs.CALCULATOR && <Calculator />}
         {value === AppTabs.SETTINGS && (
           <Settings darkMode={darkMode} onThemeChange={onThemeChange} />
         )}
@@ -67,10 +64,6 @@ function App({ darkMode, onThemeChange }: AppProps) {
           <BottomNavigationAction 
             label="记分表" 
             icon={<ScoreIcon />} 
-          />
-          <BottomNavigationAction 
-            label="计分器" 
-            icon={<CalculateIcon />} 
           />
           <BottomNavigationAction 
             label="设置" 
